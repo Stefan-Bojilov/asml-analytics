@@ -130,7 +130,36 @@ st.set_page_config(
 # Load once and cache — the parquet is ~130 MB so we don't want to re-read on every interaction
 @st.cache_data
 def load_data() -> pl.DataFrame:
-    return pl.read_parquet(MAIN_PARQUET)
+    # Only read columns the dashboard actually uses — the full parquet contains
+    # many more (ZIP code, sub-product, sub-issue, tags, date columns, etc.)
+    needed = [
+        "year", "Product", "State", "Issue", "Company",
+        "Submitted via", "Company response to consumer",
+        "Timely response?", "Consumer disputed?",
+        "response_days", "Consumer complaint narrative",
+    ]
+    return (
+        pl.read_parquet(MAIN_PARQUET, columns=needed)
+        .with_columns([
+            # Narrative text is the single biggest memory hog — each row can be
+            # hundreds of words. We only ever check is_not_null, so replace it
+            # with a bool flag right away and drop the original.
+            pl.col("Consumer complaint narrative").is_not_null().alias("has_narrative"),
+            # Low-cardinality string columns as categoricals: Polars stores one
+            # copy of each unique string + integer indices per row (~10x saving).
+            pl.col("Product").cast(pl.Categorical),
+            pl.col("State").cast(pl.Categorical),
+            pl.col("Submitted via").cast(pl.Categorical),
+            pl.col("Timely response?").cast(pl.Categorical),
+            pl.col("Consumer disputed?").cast(pl.Categorical),
+            pl.col("Company response to consumer").cast(pl.Categorical),
+            pl.col("Issue").cast(pl.Categorical),
+            # Smaller numeric types — year fits in Int16, response_days in Float32
+            pl.col("year").cast(pl.Int16),
+            pl.col("response_days").cast(pl.Float32),
+        ])
+        .drop("Consumer complaint narrative")
+    )
 
 df_all = load_data()
 
@@ -204,14 +233,14 @@ with tab1:
     total         = df.shape[0]
     timely_pct    = (df["Timely response?"] == "Yes").mean() * 100
     avg_days      = df["response_days"].drop_nulls().mean()
-    narrative_pct = df["Consumer complaint narrative"].is_not_null().mean() * 100
+    narrative_pct = df["has_narrative"].mean() * 100
 
     # Deltas vs the previous full year so you can see whether things are improving
     if show_delta:
         d_total     = df_last.shape[0] - df_prev.shape[0]
         d_timely    = (df_last["Timely response?"] == "Yes").mean() * 100 - (df_prev["Timely response?"] == "Yes").mean() * 100
         d_days      = df_last["response_days"].drop_nulls().mean() - df_prev["response_days"].drop_nulls().mean()
-        d_narrative = df_last["Consumer complaint narrative"].is_not_null().mean() * 100 - df_prev["Consumer complaint narrative"].is_not_null().mean() * 100
+        d_narrative = df_last["has_narrative"].mean() * 100 - df_prev["has_narrative"].mean() * 100
     else:
         d_total = d_timely = d_days = d_narrative = None
 
