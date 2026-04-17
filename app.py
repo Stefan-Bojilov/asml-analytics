@@ -946,19 +946,23 @@ with tab5:
         st.markdown("""
 The dashboard centres on two questions: where are complaints concentrated, and are companies actually handling them well? Product and company breakdowns answer the first; timely response rate, average resolution time, and dispute rate answer the second. Geographic distribution is included because consumer protection issues tend to cluster regionally: a state-level spike can signal a local enforcement priority that an aggregate number would mask.
 
-The year range 2011–2019 (partial) was chosen to follow the full arc of CFPB's complaint intake program from its early years through its peak. The 2019 partial-year data is kept in the trend chart to show the trajectory, but it is clearly flagged and excluded from year-on-year comparisons.
+The year range 2011 to 2019 (partial) was chosen to follow the full arc of the CFPB complaint intake program from its early years through its peak. The 2019 partial-year data is kept in the trend chart to show the trajectory, but it is clearly flagged and excluded from year-on-year comparisons.
+
+Before the dashboard was built, the data went through an exploratory and cleaning phase in a Jupyter notebook. The main issue worth flagging is that the CFPB has renamed product categories several times over the years, which means the same type of product appears under different labels depending on when the complaint was filed. For example, "Credit card" and "Prepaid card" are treated as the same category, as are "Bank account or service" and "Checking or savings account," and several variants of credit reporting that accumulated different names over time. Without consolidating these, the charts would split what is effectively one product into several smaller fragments and understate where complaints are really going. The consolidation was done using prefix matching rather than exact string replacement to make it robust to minor naming differences across dataset versions.
         """)
 
         st.markdown("**What the dashboard communicates clearly**")
         st.markdown("""
-- Credit Reporting generates a disproportionate share of all complaints — this comes through across the KPI tiles, the top-products bar, the key findings cards, and the product trend lines. The pattern is consistent enough that it is hard to miss.
-- The web channel has almost entirely displaced postal and phone submissions and clearly dominates.
+Credit Reporting generates a disproportionate share of all complaints. This comes through across the KPI tiles, the top-products bar, the key findings cards, and the product trend lines. The pattern is consistent enough that it is hard to miss.
+
+The web channel has almost entirely displaced postal and phone submissions over the period. The stacked area chart in the Channels tab makes the pace of that shift concrete.
         """)
 
         st.markdown("**What it does not explain well or could be misread**")
         st.markdown("""
-- **Dispute rates look fine for recent products, but they are not.** The *Consumer disputed?* field was discontinued in 2017. A product that grew mainly after 2017 will show a near-zero dispute rate, which looks like a good result. It is not, it just means the measurement stopped. The caveat is in the sidebar and in a banner on the Product tab, but it is still the number one thing a reader could take away wrong.
-- **High complaint volume does not mean a company is worse.** Large banks have more customers and therefore more complaints by volume. Without normalising by customer base or market share — data that is not in this dataset — the Company Analysis tab can make big institutions look worse than smaller ones simply because of size. The chart shows absolute counts, not rates.
+Dispute rates look fine for recent products, but they are not. The *Consumer disputed?* field was discontinued in 2017. A product that grew mainly after 2017 will show a near-zero dispute rate, which looks like a good result. It is not; it just means the measurement stopped. The caveat is in the sidebar and in a banner on the Product tab, but it is still the most likely thing a reader could take away wrong.
+
+High complaint volume does not mean a company is worse. Large banks have more customers and therefore more complaints in absolute terms. Without normalising by customer base or market share, which is not available in this dataset, the Company Analysis tab can make large institutions look worse than smaller ones purely because of size. The chart shows counts, not rates.
         """)
 
     with col_ai:
