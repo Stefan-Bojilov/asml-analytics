@@ -1,0 +1,14 @@
+[project]
+name = "asml-analytics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "polars>=1.39.3",
+    "pandas>=3.0.2",
+    "kagglehub>=1.0.0",
+    "plotly>=6.7.0",
+    "nbformat>=5.10.4",
+    "streamlit>=1.35.0",
+]
