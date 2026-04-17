@@ -222,11 +222,12 @@ if len(complete_years) >= 2:
 else:
     show_delta = False
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Overview",
     "📦 Product Analysis",
     "🏦 Company Analysis",
     "📬 Channels & Response",
+    "📝 About",
 ])
 
 # --- Overview tab ---
@@ -930,3 +931,52 @@ with tab4:
         )
         st.plotly_chart(fig4, use_container_width=True)
         st.caption("Box = interquartile range (25th–75th percentile). Line = median. Cross = mean. Whiskers = 5th–95th percentile.")
+
+
+# --- About tab ---
+with tab5:
+    st.subheader("About This Dashboard")
+
+    col_doc, col_ai = st.columns(2)
+
+    with col_doc:
+        st.markdown("### Documentation")
+
+        st.markdown("**What this focuses on and why**")
+        st.markdown("""
+The dashboard centres on two questions: where are complaints concentrated, and are companies actually handling them well? Product and company breakdowns answer the first; timely response rate, average resolution time, and dispute rate answer the second. Geographic distribution is included because consumer protection issues tend to cluster regionally — a state-level spike can signal a local enforcement priority that an aggregate number would mask.
+
+The year range 2011–2019 (partial) was chosen to follow the full arc of CFPB's complaint intake program from its early years through its peak. The 2019 partial-year data is kept in the trend chart to show the trajectory, but it is clearly flagged and excluded from year-on-year comparisons.
+        """)
+
+        st.markdown("**What the dashboard communicates clearly**")
+        st.markdown("""
+- Credit Reporting generates a disproportionate share of all complaints — this comes through across the KPI tiles, the top-products bar, the key findings cards, and the product trend lines. The pattern is consistent enough that it is hard to miss.
+- The web channel has almost entirely displaced postal and phone submissions over the period. The stacked area chart in the Channels tab makes the pace of that shift concrete rather than just asserting it.
+        """)
+
+        st.markdown("**What it does not explain well — or could be misread**")
+        st.markdown("""
+- **Dispute rates look fine for recent products, but they are not.** The *Consumer disputed?* field was discontinued in 2017. A product that grew mainly after 2017 will show a near-zero dispute rate, which looks like a good result. It is not — it just means the measurement stopped. The caveat is in the sidebar and in a banner on the Product tab, but it is still the number one thing a reader could take away wrong.
+- **High complaint volume does not mean a company is worse.** Large banks have more customers and therefore more complaints by volume. Without normalising by customer base or market share — data that is not in this dataset — the Company Analysis tab can make big institutions look worse than smaller ones simply because of size. The chart shows absolute counts, not rates.
+        """)
+
+    with col_ai:
+        st.markdown("### AI & Advanced Analytics")
+
+        st.markdown("**Where AI could add real value here**")
+        st.markdown("""
+The most straightforward application is **complaint routing and categorisation**. The free-text narrative field contains the consumer's own description of the problem. A text classifier trained on historical complaints could assign product category and issue type automatically, reducing the manual labelling burden and catching cases where consumers tick the wrong product box. The same model could flag complaints that historically lead to disputes, letting companies prioritise those for faster human review.
+
+A second useful application is **early-warning detection**. A simple rolling-window model on weekly complaint volume per company × product can raise a flag when the rate spikes outside its normal range — no machine learning required, just statistical process control. This kind of signal is more actionable than a year-end review because it surfaces problems while they are still developing.
+
+**Summarisation** across the narrative field is another natural fit. Grouping complaints by issue type and running them through a language model could pull out recurring themes much faster than reading individual submissions. For a regulator reviewing 10,000 complaints about a single company, that kind of synthesis is genuinely useful.
+        """)
+
+        st.markdown("**Challenges and risks**")
+        st.markdown("""
+- **Self-selection bias.** Only consumers who know the CFPB exists and choose to file appear in this data. Any model trained here will not generalise to the broader population of people who had a problem but did not complain. Predictions about complaint likelihood, for example, would be predictions about filing behaviour — not about underlying harm.
+- **Structural breaks in the data.** The 2017 discontinuation of the dispute field is a hard break. A model that uses dispute history as a feature will behave differently before and after that date, and it is not obvious how to handle the split cleanly. Company name inconsistency is a similar problem — entity resolution would need to happen before any company-level model could be trusted.
+- **No outcome data.** The dataset records that a complaint was filed and how a company responded — but not whether the consumer's problem was actually resolved. A model that predicts "complaint closed with relief" is not the same as a model that predicts "consumer was made whole." Without ground-truth outcomes, it is hard to build models that optimise for what actually matters.
+- **Gaming risk.** If companies know their response speed is being monitored and fed into a model, they have an incentive to close complaints quickly rather than thoroughly. Any operational model built on this data should be designed with that response dynamic in mind.
+        """)
