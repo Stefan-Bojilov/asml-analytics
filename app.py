@@ -32,7 +32,10 @@ pio.templates["cfpb"] = go.layout.Template(
 )
 pio.templates.default = "cfpb"
 
-DATA_DIR    = "dashboard_data"
+# On Streamlit Community Cloud the repo is mounted read-only, so we can't
+# write next to the source files. /tmp is always writable (and survives
+# within a running container — only cleared on full reboot).
+DATA_DIR     = "/tmp/dashboard_data"
 MAIN_PARQUET = f"{DATA_DIR}/cfpb_complaints_clean.parquet"
 
 def build_data() -> None:
