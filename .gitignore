@@ -8,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Large raw data files — too big for GitHub (>100 MB)
+dashboard_data/cfpb_complaints_clean.parquet
+
+# Kaggle download cache
+~/.cache/kagglehub/

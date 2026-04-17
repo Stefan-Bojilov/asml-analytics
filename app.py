@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import polars as pl
 import plotly.graph_objects as go
@@ -31,6 +32,94 @@ pio.templates["cfpb"] = go.layout.Template(
 )
 pio.templates.default = "cfpb"
 
+DATA_DIR    = "dashboard_data"
+MAIN_PARQUET = f"{DATA_DIR}/cfpb_complaints_clean.parquet"
+
+def build_data() -> None:
+    """Download the raw dataset from Kaggle and write the three parquet files.
+
+    Called automatically on first run when the main parquet is absent — e.g.
+    on a fresh Streamlit Community Cloud deployment. Kaggle credentials are
+    read from st.secrets so they never need to be committed to the repo.
+    """
+    import kagglehub
+
+    # Inject Kaggle credentials from Streamlit secrets into the environment
+    # so kagglehub can authenticate without a local ~/.kaggle/kaggle.json.
+    if "kaggle" in st.secrets:
+        os.environ["KAGGLE_USERNAME"] = st.secrets["kaggle"]["username"]
+        os.environ["KAGGLE_KEY"]      = st.secrets["kaggle"]["key"]
+
+    with st.status("Building data — this only happens once…", expanded=True) as status:
+        st.write("Downloading dataset from Kaggle…")
+        path = kagglehub.dataset_download("selener/consumer-complaint-database")
+
+        st.write("Loading CSV…")
+        csv_file = next(f for f in os.listdir(path) if f.endswith(".csv"))
+        df = pl.read_csv(os.path.join(path, csv_file))
+        df = df.with_columns(
+            pl.col("Date received").str.to_date(format="%m/%d/%Y"),
+            pl.col("Date sent to company").str.to_date(format="%m/%d/%Y"),
+        ).sort("Date received")
+
+        st.write("Cleaning and engineering features…")
+        normalise_product = (
+            pl.when(pl.col("Product").str.starts_with("Credit reporting"))
+              .then(pl.lit("Credit Reporting"))
+            .when(pl.col("Product").str.starts_with("Credit card") |
+                  pl.col("Product").str.starts_with("Prepaid card"))
+              .then(pl.lit("Credit Card"))
+            .when(pl.col("Product").str.starts_with("Bank account") |
+                  pl.col("Product").str.starts_with("Checking or savings"))
+              .then(pl.lit("Bank Account"))
+            .when(pl.col("Product").str.starts_with("Payday loan"))
+              .then(pl.lit("Payday / Personal Loan"))
+            .when(pl.col("Product").str.starts_with("Money transfer") |
+                  pl.col("Product").str.starts_with("Virtual currency"))
+              .then(pl.lit("Money Transfer"))
+            .otherwise(pl.col("Product"))
+            .alias("Product")
+        )
+        df_clean = (
+            df
+            .with_columns(
+                normalise_product,
+                (pl.col("Date sent to company") - pl.col("Date received"))
+                  .dt.total_days().alias("response_days"),
+                pl.col("Date received").dt.year().cast(pl.Int32).alias("year"),
+                pl.col("Date received").dt.strftime("%Y-%m").alias("year_month"),
+                pl.col("Consumer disputed?").replace({"N/A": None}),
+            )
+            .unique(subset=["Complaint ID"], keep="first")
+            .sort("Date received")
+        )
+
+        st.write("Writing parquet files…")
+        os.makedirs(DATA_DIR, exist_ok=True)
+        df_clean.write_parquet(MAIN_PARQUET)
+        (
+            df_clean.group_by(["Product", "year"])
+            .agg(pl.len().alias("complaints"))
+            .sort(["Product", "year"])
+            .write_parquet(f"{DATA_DIR}/complaints_by_product_year.parquet")
+        )
+        (
+            df_clean.group_by(["Company", "Product"])
+            .agg([
+                pl.len().alias("total_complaints"),
+                (pl.col("Timely response?") == "No").mean().alias("late_response_rate"),
+                (pl.col("Consumer disputed?") == "Yes").mean().alias("dispute_rate"),
+            ])
+            .sort("total_complaints", descending=True)
+            .write_parquet(f"{DATA_DIR}/company_response_quality.parquet")
+        )
+        status.update(label="Data ready.", state="complete", expanded=False)
+
+# Build data on first deploy — skipped on every subsequent run once the parquet exists
+if not os.path.exists(MAIN_PARQUET):
+    build_data()
+    st.rerun()
+
 st.set_page_config(
     page_title="CFPB Consumer Complaints",
     page_icon="📊",
@@ -41,7 +130,7 @@ st.set_page_config(
 # Load once and cache — the parquet is ~130 MB so we don't want to re-read on every interaction
 @st.cache_data
 def load_data() -> pl.DataFrame:
-    return pl.read_parquet("dashboard_data/cfpb_complaints_clean.parquet")
+    return pl.read_parquet(MAIN_PARQUET)
 
 df_all = load_data()
 
