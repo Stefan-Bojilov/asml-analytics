@@ -193,7 +193,7 @@ with st.sidebar:
 - **2019 is a partial year** (January–May only); complaint totals cannot be compared to other full years.
 - **Company names are inconsistent** — the same institution may appear under multiple name variants (e.g. "Equifax, Inc." vs "Equifax Information Services LLC"), inflating apparent competitor diversity.
 - **State field is missing for {null_state_pct:.1f}% of records** and those rows are excluded from the geographic map.
-- This dataset covers complaints *received* by the CFPB — downstream resolution quality and consumer outcomes beyond CFPB involvement are not captured.
+- This dataset covers complaints received by the CFPB. Downstream resolution quality and consumer outcomes beyond CFPB involvement are not captured.
         """)
 
 # Apply whatever the user selected — empty multiselect means "show all"
