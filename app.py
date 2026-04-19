@@ -189,7 +189,6 @@ with st.sidebar:
         st.markdown(f"""
 **Known limitations in this dataset:**
 
-- **Complaints are self-reported**, not a random sample — awareness and channel accessibility skew who files.
 - **`Consumer disputed?` was discontinued in 2017.** Any dispute rate shown for post-2017 data reflects missing data, not the absence of disputes.
 - **2019 is a partial year** (January–May only); complaint totals cannot be compared to other full years.
 - **Company names are inconsistent** — the same institution may appear under multiple name variants (e.g. "Equifax, Inc." vs "Equifax Information Services LLC"), inflating apparent competitor diversity.
